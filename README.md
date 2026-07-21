@@ -1,260 +1,157 @@
-# ⚡ SIEM Log Analyzer — Mini SOC System
+# Enterprise-Grade Full-Stack SIEM Platform
 
-A production-quality **Security Information and Event Management (SIEM)** system
-built in Python + Flask. Parses Linux/Windows logs, detects threats with modular
-rules, stores alerts in SQLite, and visualises everything on a dark-theme SOC dashboard.
+![SIEM Banner](https://img.shields.io/badge/Security-SIEM%20SOC%20v2.0-blue?style=for-the-badge&logo=shield)
+![FastAPI](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%203.12-009688?style=for-the-badge&logo=fastapi)
+![React](https://img.shields.io/badge/Frontend-React%2018%20%7C%20Vite%20%7C%20Tailwind-61DAFB?style=for-the-badge&logo=react)
+![Database](https://img.shields.io/badge/Database-SQLAlchemy%20%7C%20SQLite%20%7C%20PostgreSQL-4169E1?style=for-the-badge&logo=postgresql)
+![Docker](https://img.shields.io/badge/Deployment-Docker%20Compose-2496ED?style=for-the-badge&logo=docker)
 
----
-
-## 📸 Features at a Glance
-
-| Feature | Description |
-|---|---|
-| **Log Parsing** | Parses `auth.log`, `syslog`, and any custom log file |
-| **6 Threat Rules** | Brute force, suspicious IPs, off-hours login, activity spike, privilege escalation, invalid user probe |
-| **Alert Storage** | SQLite database with severity levels (CRITICAL / WARNING / INFO) |
-| **Dashboard** | Dark SOC-themed Flask web UI with Chart.js graphs |
-| **File Upload** | Drag-and-drop log upload with auto-analysis |
-| **Real-Time Feed** | Server-Sent Events stream simulates live log monitoring |
-| **Email Alerts** | Optional SMTP notifications for CRITICAL severity |
-| **Modular Rules** | Add new detection rules in one file |
+A production-style Security Information and Event Management (SIEM) platform engineered for modern Security Operations Centers (SOC). Reuses and expands core Python threat detection rules into a full-stack platform featuring JWT authentication, FastAPI REST APIs, SQLAlchemy ORM, real-time Watchdog directory monitoring, interactive Chart.js dashboards, Threat Intelligence enrichment (AbuseIPDB/VT/GeoIP), MITRE ATT&CK framework mapping, multi-channel notifications (SMTP Email, Discord, Slack), and automated executive PDF/HTML report generation.
 
 ---
 
-## 🗂️ Project Structure
+## 🏛️ Architecture Overview
 
 ```
 siem_analyzer/
-│
-├── logs/                        # Log files (input)
-│   ├── auth.log                 # Sample SSH/auth log
-│   └── syslog                   # Sample syslog
-│
-├── parser/
-│   ├── __init__.py
-│   └── log_parser.py            # Regex-based log parser
-│
-├── detection/
-│   ├── __init__.py
-│   └── engine.py                # Threat detection rules engine
-│
-├── alerts/
-│   ├── __init__.py
-│   ├── store.py                 # SQLite alert storage
-│   └── email_notifier.py        # Optional SMTP email alerts
-│
-├── dashboard/
-│   ├── app.py                   # Flask web application
-│   ├── templates/
-│   │   └── index.html           # Main dashboard HTML
-│   └── static/
-│       ├── css/style.css        # Dark SOC theme stylesheet
-│       └── js/app.js            # Dashboard JavaScript
-│
-├── requirements.txt
+├── backend/
+│   ├── app/
+│   │   ├── api/            # REST API endpoints (auth, dashboard, alerts, logs, reports, monitor, health)
+│   │   ├── auth/           # JWT token handling & direct bcrypt password hashing
+│   │   ├── database/       # SQLAlchemy ORM session factory & engine setup
+│   │   ├── detectors/      # Preserved & expanded 16-rule detection engine + MITRE ATT&CK mapping
+│   │   ├── models/         # Database ORM models (User, Alert, Log, Report)
+│   │   ├── reports/        # Executive PDF (ReportLab) & HTML security report generators
+│   │   ├── schemas/        # Pydantic data validation schemas
+│   │   ├── services/       # Threat Intel (AbuseIPDB, VT, GeoIP), Notifications, Watchdog Monitor
+│   │   ├── utils/          # Multi-format log parsers (auth.log, syslog, apache, evtx, json, generic)
+│   │   ├── websocket/      # Live alert feed WebSocket connection manager
+│   │   └── main.py         # FastAPI application entry point
+│   └── Dockerfile
+├── frontend/
+│   ├── src/
+│   │   ├── components/     # Navbar, Sidebar, StatCards, SeverityBadge, MitreBadge, ThreatIntelModal
+│   │   ├── pages/          # Dashboard, Alerts, AlertDetail, Logs, Monitor, Reports, Login, Register
+│   │   └── services/       # Axios API client, AuthContext, WebSocket listener
+│   ├── package.json
+│   ├── vite.config.js
+│   └── Dockerfile
+├── logs/                   # Monitored directory for live Watchdog log ingestion
+├── uploads/                # Directory for uploaded raw log files
+├── reports/                # Output directory for generated PDF & HTML executive reports
+├── tests/                  # Pytest unit & integration test suite (parsers, detectors, API)
+├── Dockerfile              # Root backend Docker container spec
+├── docker-compose.yml      # Multi-container orchestration (Backend, Frontend, PostgreSQL)
 └── README.md
 ```
 
 ---
 
-## 🚀 Quick Start (Local)
+## 🔥 Key Features
 
-### 1. Clone / Download
+- 🔒 **Role-Based JWT Authentication**: Secure login & registration (`Admin` vs `Analyst` roles).
+- 📊 **Interactive SOC Dashboard**: Real-time KPI stat cards, severity distribution donut charts, attack timeline, top attacker IPs, and live WebSocket threat feed.
+- ⚡ **Real-Time Log Monitoring**: Python `Watchdog` service automatically monitors `logs/` directory, parses new files on creation, detects attacks, stores alerts, and broadcasts to dashboard live without manual refresh.
+- 🛡️ **16 Modular Security Detectors**:
+  - SSH Brute Force (`T1110.001`)
+  - Password Spraying (`T1110.003`)
+  - SQL Injection (`T1190`)
+  - Cross-Site Scripting (XSS) (`T1190`)
+  - OS Command Injection (`T1059`)
+  - Web Shell Upload (`T1505.003`)
+  - Sensitive File Access (`T1083`)
+  - Port Scanning (`T1046`)
+  - Suspicious User Agent (`T1071.001`)
+  - Privilege Escalation (`T1548`)
+  - Off-Hours Logins (`T1078`)
+  - Activity Volume Spikes (`T1499`)
+  - Invalid Username Probes (`T1087`)
+  - Impossible Travel (`T1078.004`)
+  - Suspicious IP Reputation (`T1071`)
+  - IOC Signature Matching (`T1204`)
+- 🌐 **Threat Intelligence & GeoIP Enrichment**: Real-time lookup for country, ASN, ISP provider, AbuseIPDB confidence score, and reputation level.
+- 🎯 **MITRE ATT&CK Integration**: Every alert is tagged with technique ID, technique name, tactic category, and direct links to MITRE documentation.
+- 📄 **Executive PDF & HTML Reporting**: One-click generation of professional security reports with summary metrics, attacker lists, and actionable mitigation recommendations.
+- 📢 **Multi-Channel Notifications**: Automated alert dispatches to SMTP Email, Discord webhooks, and Slack webhooks.
+- 🐳 **Docker & Docker Compose**: Complete containerization for backend, React frontend (Nginx), and PostgreSQL.
 
+---
+
+## 🛠️ Tech Stack
+
+- **Backend**: Python 3.12, FastAPI, SQLAlchemy ORM, Pydantic v2, Pytest, ReportLab, Watchdog, Uvicorn, Jose JWT, Bcrypt.
+- **Frontend**: React 18, Vite, Tailwind CSS, Axios, React Router DOM v6, Chart.js, Lucide React Icons.
+- **Database**: SQLite (dev default) & PostgreSQL (production ready).
+- **Deployment**: Docker, Docker Compose, Nginx.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Local Development Setup
+
+#### Backend Setup
 ```bash
-git clone https://github.com/yourname/siem-analyzer.git
-cd siem-analyzer
-```
-
-### 2. Create a Virtual Environment
-
-```bash
-python3 -m venv venv
-source venv/bin/activate        # Linux / macOS
-venv\Scripts\activate           # Windows
-```
-
-### 3. Install Dependencies
-
-```bash
+# Install Python dependencies
 pip install -r requirements.txt
-```
 
-### 4. Run the App
+# Launch FastAPI development server (with live reload)
+uvicorn backend.app.main:app --reload --port 8000
+```
+- API Documentation (Swagger UI): `http://127.0.0.1:8000/docs`
+- Health Check: `http://127.0.0.1:8000/api/health`
+
+#### Frontend Setup
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install Node dependencies
+npm install
+
+# Launch Vite development server
+npm run dev
+```
+- SOC Dashboard UI: `http://localhost:5173`
+- Default Login Credentials:
+  - **Admin**: `admin` / `admin123`
+  - **Analyst**: `analyst` / `analyst123`
+
+---
+
+### 2. Running with Docker Compose
 
 ```bash
-cd dashboard
-python app.py
+# Build and spin up containers (Backend, Frontend, PostgreSQL)
+docker-compose up --build
 ```
-
-Open **http://127.0.0.1:5000** in your browser.
-
-On startup, the app automatically parses the sample log files and pre-loads alerts so the dashboard is ready immediately.
+- Frontend Web App: `http://localhost:5173`
+- Backend REST API: `http://localhost:8000`
 
 ---
 
-## 🔧 Usage Guide
+## 🧪 Testing
 
-### Analyze Default Logs
-Click **"Analyze Logs"** in the top bar or sidebar. This runs the parser and detection engine on `logs/auth.log` and `logs/syslog`.
-
-### Upload Your Own Log File
-Drag and drop any `.log` or `.txt` file onto the upload zone. The system auto-detects the log type and runs detection.
-
-### Start Live Feed
-Click **"Start Live Feed"** to begin real-time monitoring (simulated events). The dashboard updates automatically.
-
-### Filter Alerts
-Use the **Critical / Warning / Info** filter buttons above the table, or type in the search box to filter by IP, username, or alert type.
-
-### Click Any Alert Row
-Opens a detail modal with the full alert information and raw log line.
-
----
-
-## 🛡️ Detection Rules
-
-| Rule | Trigger | Severity |
-|---|---|---|
-| Brute Force | ≥5 failed logins from same IP | CRITICAL |
-| Multiple Failed Logins | 3–4 failures | WARNING |
-| Suspicious IP | Activity from known-bad IPs | CRITICAL |
-| Off-Hours Login | Successful login 02:00–05:00 | WARNING |
-| Activity Spike | Events/minute > 3× average | WARNING |
-| Privilege Escalation | sudo / su command detected | WARNING |
-| Invalid User Probe | Login with non-existent username | INFO |
-
-### Adding a New Rule
-
-Open `detection/engine.py` and add a function:
-
-```python
-def rule_my_custom_rule(events: list) -> list:
-    alerts = []
-    for ev in events:
-        if "some condition" in ev["raw"]:
-            alerts.append(_make_alert(
-                alert_type = "My Custom Alert",
-                severity   = "WARNING",
-                ip         = ev["ip"],
-                username   = ev["username"],
-                detail     = "Custom rule triggered.",
-                raw        = ev["raw"],
-            ))
-    return alerts
-
-# Register it:
-RULES.append(rule_my_custom_rule)
-```
-
----
-
-## 📧 Email Alert Configuration
-
-Set these environment variables before running:
+Run unit and integration tests across parsers, detectors, and REST APIs:
 
 ```bash
-export SIEM_SMTP_HOST="smtp.gmail.com"
-export SIEM_SMTP_PORT="587"
-export SIEM_SMTP_USER="you@gmail.com"
-export SIEM_SMTP_PASS="your_app_password"
-export SIEM_ALERT_EMAIL="soc@yourcompany.com"
-```
-
-> **Note**: Use a Gmail App Password (not your main password). Go to Google Account → Security → App Passwords.
-
----
-
-## 🔍 ELK Stack Integration (Optional)
-
-For production scale, replace the SQLite store with Elasticsearch:
-
-1. **Filebeat** watches log files and ships to Logstash
-2. **Logstash** applies grok patterns (similar to our regex parser)
-3. **Elasticsearch** indexes events
-4. **Kibana** visualizes (or use our Flask dashboard querying ES)
-
-To connect to ES, modify `alerts/store.py` to use the `elasticsearch-py` client:
-
-```python
-from elasticsearch import Elasticsearch
-es = Elasticsearch("http://localhost:9200")
-es.index(index="siem-alerts", document=alert)
+pytest
 ```
 
 ---
 
-## 🛡️ AbuseIPDB Threat Intelligence
+## 📡 REST API Reference Summary
 
-```bash
-export ABUSEIPDB_KEY="your_api_key_here"
-```
-
-Add to `detection/engine.py`:
-
-```python
-import requests, os
-
-def check_abuseipdb(ip: str) -> int:
-    key = os.getenv("ABUSEIPDB_KEY", "")
-    if not key or ip in ("N/A", "localhost"):
-        return 0
-    resp = requests.get(
-        "https://api.abuseipdb.com/api/v2/check",
-        headers={"Key": key, "Accept": "application/json"},
-        params={"ipAddress": ip, "maxAgeInDays": 90}
-    )
-    return resp.json()["data"]["abuseConfidenceScore"]
-```
-
----
-
-## ☁️ Deployment
-
-### Render (Free Tier)
-
-1. Push your project to GitHub
-2. Go to [render.com](https://render.com) → New Web Service
-3. Connect your repo
-4. Build command: `pip install -r requirements.txt`
-5. Start command: `gunicorn dashboard.app:app`
-6. Add environment variables in Render's dashboard
-
-### Heroku
-
-```bash
-# Install Heroku CLI, then:
-heroku create siem-analyzer
-git push heroku main
-heroku config:set SIEM_SMTP_USER=you@gmail.com
-```
-
-Create `Procfile`:
-```
-web: gunicorn dashboard.app:app
-```
-
----
-
-## 🧪 Running the Test Suite
-
-```bash
-python -m pytest tests/ -v
-```
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Windows Event Log support (pywin32)
-- [ ] GeoIP mapping of attacking IPs
-- [ ] Scheduled reports (daily PDF)
-- [ ] Slack/Webhook notifications
-- [ ] Multi-user authentication
-- [ ] Elasticsearch backend
-
----
-
-## 📄 License
-
-MIT — free to use and modify for educational and commercial purposes.
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| `POST` | `/api/auth/login` | Authenticate user & obtain JWT token | Public |
+| `POST` | `/api/auth/register` | Register new SOC Analyst / Admin account | Public |
+| `GET` | `/api/auth/me` | Retrieve current authenticated user profile | Bearer Token |
+| `GET` | `/api/dashboard` | Summary statistics, severity breakdown, top IPs | Bearer Token |
+| `GET` | `/api/alerts` | Paginated alerts with search & multi-filters | Bearer Token |
+| `PATCH` | `/api/alerts/{id}` | Update alert status, analyst notes, assignment | Bearer Token |
+| `GET` | `/api/alerts/export/csv` | Export filtered alerts to CSV file | Bearer Token |
+| `POST` | `/api/logs/upload` | Upload and analyze raw log files | Bearer Token |
+| `POST` | `/api/reports/generate` | Generate executive PDF or HTML report | Bearer Token |
+| `POST` | `/api/monitor/start` | Start real-time Watchdog directory monitor | Bearer Token |
+| `GET` | `/api/health` | System health check & database state | Public |
