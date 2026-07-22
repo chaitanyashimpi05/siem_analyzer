@@ -4,7 +4,6 @@
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%203.12-009688?style=for-the-badge&logo=fastapi)
 ![React](https://img.shields.io/badge/Frontend-React%2018%20%7C%20Vite%20%7C%20Tailwind-61DAFB?style=for-the-badge&logo=react)
 ![Database](https://img.shields.io/badge/Database-SQLAlchemy%20%7C%20SQLite%20%7C%20PostgreSQL-4169E1?style=for-the-badge&logo=postgresql)
-![Docker](https://img.shields.io/badge/Deployment-Docker%20Compose-2496ED?style=for-the-badge&logo=docker)
 
 A production-style Security Information and Event Management (SIEM) platform engineered for modern Security Operations Centers (SOC). Reuses and expands core Python threat detection rules into a full-stack platform featuring JWT authentication, FastAPI REST APIs, SQLAlchemy ORM, real-time Watchdog directory monitoring, interactive Chart.js dashboards, Threat Intelligence enrichment (AbuseIPDB/VT/GeoIP), MITRE ATT&CK framework mapping, multi-channel notifications (SMTP Email, Discord, Slack), and automated executive PDF/HTML report generation.
 
@@ -27,21 +26,17 @@ siem_analyzer/
 │   │   ├── utils/          # Multi-format log parsers (auth.log, syslog, apache, evtx, json, generic)
 │   │   ├── websocket/      # Live alert feed WebSocket connection manager
 │   │   └── main.py         # FastAPI application entry point
-│   └── Dockerfile
 ├── frontend/
 │   ├── src/
 │   │   ├── components/     # Navbar, Sidebar, StatCards, SeverityBadge, MitreBadge, ThreatIntelModal
 │   │   ├── pages/          # Dashboard, Alerts, AlertDetail, Logs, Monitor, Reports, Login, Register
 │   │   └── services/       # Axios API client, AuthContext, WebSocket listener
 │   ├── package.json
-│   ├── vite.config.js
-│   └── Dockerfile
+│   └── vite.config.js
 ├── logs/                   # Monitored directory for live Watchdog log ingestion
 ├── uploads/                # Directory for uploaded raw log files
 ├── reports/                # Output directory for generated PDF & HTML executive reports
 ├── tests/                  # Pytest unit & integration test suite (parsers, detectors, API)
-├── Dockerfile              # Root backend Docker container spec
-├── docker-compose.yml      # Multi-container orchestration (Backend, Frontend, PostgreSQL)
 └── README.md
 ```
 
@@ -73,7 +68,6 @@ siem_analyzer/
 - 🎯 **MITRE ATT&CK Integration**: Every alert is tagged with technique ID, technique name, tactic category, and direct links to MITRE documentation.
 - 📄 **Executive PDF & HTML Reporting**: One-click generation of professional security reports with summary metrics, attacker lists, and actionable mitigation recommendations.
 - 📢 **Multi-Channel Notifications**: Automated alert dispatches to SMTP Email, Discord webhooks, and Slack webhooks.
-- 🐳 **Docker & Docker Compose**: Complete containerization for backend, React frontend (Nginx), and PostgreSQL.
 
 ---
 
@@ -82,15 +76,14 @@ siem_analyzer/
 - **Backend**: Python 3.12, FastAPI, SQLAlchemy ORM, Pydantic v2, Pytest, ReportLab, Watchdog, Uvicorn, Jose JWT, Bcrypt.
 - **Frontend**: React 18, Vite, Tailwind CSS, Axios, React Router DOM v6, Chart.js, Lucide React Icons.
 - **Database**: SQLite (dev default) & PostgreSQL (production ready).
-- **Deployment**: Docker, Docker Compose, Nginx.
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Local Development Setup
+### Local Development Setup
 
-#### Backend Setup
+#### 1. Backend Setup
 ```bash
 # Install Python dependencies
 pip install -r requirements.txt
@@ -101,7 +94,7 @@ uvicorn backend.app.main:app --reload --port 8000
 - API Documentation (Swagger UI): `http://127.0.0.1:8000/docs`
 - Health Check: `http://127.0.0.1:8000/api/health`
 
-#### Frontend Setup
+#### 2. Frontend Setup
 ```bash
 # Navigate to frontend directory
 cd frontend
@@ -116,17 +109,6 @@ npm run dev
 - Default Login Credentials:
   - **Admin**: `admin` / `admin123`
   - **Analyst**: `analyst` / `analyst123`
-
----
-
-### 2. Running with Docker Compose
-
-```bash
-# Build and spin up containers (Backend, Frontend, PostgreSQL)
-docker-compose up --build
-```
-- Frontend Web App: `http://localhost:5173`
-- Backend REST API: `http://localhost:8000`
 
 ---
 
