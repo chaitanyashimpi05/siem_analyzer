@@ -12,8 +12,11 @@ def get_monitor_status():
     }
 
 @router.post("/start")
-def start_monitor():
-    loop = asyncio.get_event_loop()
+async def start_monitor():
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
     success = monitor_service.start(loop=loop)
     return {
         "status": "ok" if success else "error",

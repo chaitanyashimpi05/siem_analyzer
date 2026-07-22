@@ -16,7 +16,7 @@ MONITOR_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.pa
 os.makedirs(MONITOR_DIR, exist_ok=True)
 
 class LogFileHandler(FileSystemEventHandler):
-    def __init__(self, loop: asyncio.AbstractEventLoop):
+    def __init__(self, loop: Optional[asyncio.AbstractEventLoop] = None):
         super().__init__()
         self.loop = loop
         self.processed_files = set()
@@ -75,11 +75,24 @@ class LogFileHandler(FileSystemEventHandler):
 
             if alerts:
                 dispatch_alert_notifications(alerts)
-                if self.loop and self.loop.is_running():
+
+            # Broadcast live via WebSockets
+            try:
+                target_loop = self.loop or asyncio.get_event_loop()
+                if target_loop and target_loop.is_running():
                     asyncio.run_coroutine_threadsafe(
-                        ws_manager.broadcast({"type": "NEW_ALERTS", "count": len(alerts), "alerts": alerts[:5]}),
-                        self.loop
+                        ws_manager.broadcast({
+                            "type": "NEW_ALERTS",
+                            "filename": filename,
+                            "count": len(alerts),
+                            "events_count": len(events),
+                            "alerts": alerts[:5]
+                        }),
+                        target_loop
                     )
+            except Exception as broadcast_err:
+                print(f"[WATCHDOG] Broadcast note: {broadcast_err}")
+
             print(f"[WATCHDOG] Processed '{filename}': {len(events)} events, {saved_count} new alerts.")
         except Exception as exc:
             db.rollback()
@@ -103,11 +116,11 @@ class RealtimeMonitorService:
         self.observer: Optional[Observer] = None
         self.is_running: bool = False
 
-    def start(self, loop: asyncio.AbstractEventLoop = None):
+    def start(self, loop: Optional[asyncio.AbstractEventLoop] = None):
         if self.is_running:
             return True
         try:
-            event_handler = LogFileHandler(loop or asyncio.get_event_loop())
+            event_handler = LogFileHandler(loop=loop)
             self.observer = Observer()
             self.observer.schedule(event_handler, path=MONITOR_DIR, recursive=False)
             self.observer.start()

@@ -4,7 +4,7 @@ backend/app/utils/log_parsers.py
 Parses raw security log files and text into structured event dictionaries.
 
 Supports:
-  - Linux auth.log (SSH failed/accepted, sudo, invalid user)
+  - Linux auth.log (SSH failed/accepted, sudo, invalid user) - BSD & ISO 8601 formats
   - Linux syslog (kernel firewall drops, system services, invalid users)
   - Apache access.log (HTTP requests, status, user-agent, query strings)
   - Apache error.log (Server errors, PHP execution notices)
@@ -23,20 +23,26 @@ from datetime import datetime
 # REGEX PATTERNS
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Syslog / Authlog header pattern
-SYSLOG_HEADER = re.compile(
+# Classic BSD Syslog header: Jul 22 12:01:42 host process[123]: message
+SYSLOG_BSD_HEADER = re.compile(
     r'^(?P<month>\w+)\s+(?P<day>\d+)\s+(?P<time>\d{2}:\d{2}:\d{2})\s+'
     r'(?P<host>\S+)\s+(?P<process>\S+?)(?:\[\d+\])?:\s+(?P<message>.+)$'
 )
 
+# Modern ISO 8601 Syslog header: 2026-07-22T09:44:31.332584+00:00 host process[123]: message
+SYSLOG_ISO_HEADER = re.compile(
+    r'^(?P<iso_time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)\s+'
+    r'(?P<host>\S+)\s+(?P<process>\S+?)(?:\[\d+\])?:\s+(?P<message>.+)$'
+)
+
 # Linux auth patterns
-AUTH_FAILED   = re.compile(r'Failed password for (?:invalid user )?(?P<user>\S+) from (?P<ip>[\d.]+)')
-AUTH_ACCEPTED = re.compile(r'Accepted (?:password|publickey) for (?P<user>\S+) from (?P<ip>[\d.]+)')
-AUTH_INVALID  = re.compile(r'Invalid user (?P<user>\S+) from (?P<ip>[\d.]+)')
-SUDO_USE      = re.compile(r'(?P<user>\S+)\s+:.*COMMAND=(?P<cmd>.+)$')
+AUTH_FAILED   = re.compile(r'Failed password for (?:invalid user )?(?P<user>\S+) from (?P<ip>[\d.]+)', re.IGNORECASE)
+AUTH_ACCEPTED = re.compile(r'Accepted (?:password|publickey) for (?P<user>\S+) from (?P<ip>[\d.]+)', re.IGNORECASE)
+AUTH_INVALID  = re.compile(r'Invalid user (?P<user>\S+) from (?P<ip>[\d.]+)', re.IGNORECASE)
+SUDO_USE      = re.compile(r'(?P<user>\S+)\s+:.*COMMAND=(?P<cmd>.+)', re.IGNORECASE)
 
 # Firewall pattern
-IPTABLES_DROP = re.compile(r'SRC=(?P<ip>[\d.]+).*DST=(?P<dst>[\d.]+)')
+IPTABLES_DROP = re.compile(r'SRC=(?P<ip>[\d.]+).*DST=(?P<dst>[\d.]+)', re.IGNORECASE)
 
 # Apache Combined Log Format: 127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326 "referer" "user-agent"
 APACHE_ACCESS = re.compile(
@@ -63,17 +69,25 @@ def _build_timestamp(month: str, day: str, time_str: str) -> str:
         return datetime.now().isoformat()
 
 
+def _extract_header(line: str):
+    m = SYSLOG_ISO_HEADER.match(line)
+    if m:
+        return m.group("iso_time"), m.group("message")
+    m = SYSLOG_BSD_HEADER.match(line)
+    if m:
+        ts = _build_timestamp(m.group("month"), m.group("day"), m.group("time"))
+        return ts, m.group("message")
+    return None, line
+
+
 def _parse_authlog_line(line: str) -> dict | None:
     line = line.strip()
     if not line:
         return None
 
-    header = SYSLOG_HEADER.match(line)
-    if not header:
-        return None
-
-    timestamp = _build_timestamp(header.group("month"), header.group("day"), header.group("time"))
-    message = header.group("message")
+    timestamp, message = _extract_header(line)
+    if not timestamp:
+        timestamp = datetime.now().isoformat()
 
     m = AUTH_FAILED.search(message)
     if m:
@@ -127,12 +141,9 @@ def _parse_syslog_line(line: str) -> dict | None:
     if not line:
         return None
 
-    header = SYSLOG_HEADER.match(line)
-    if not header:
-        return None
-
-    timestamp = _build_timestamp(header.group("month"), header.group("day"), header.group("time"))
-    message = header.group("message")
+    timestamp, message = _extract_header(line)
+    if not timestamp:
+        timestamp = datetime.now().isoformat()
 
     m = IPTABLES_DROP.search(message)
     if m and ("packet dropped" in message.lower() or "ufw" in message.lower() or "drop" in message.lower()):

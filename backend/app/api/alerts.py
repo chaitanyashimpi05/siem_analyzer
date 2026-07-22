@@ -43,7 +43,7 @@ def get_alerts(
     alerts = query.order_by(Alert.id.desc()).offset((page - 1) * per_page).limit(per_page).all()
 
     return {
-        "alerts": alerts,
+        "alerts": [AlertResponse.model_validate(a) for a in alerts],
         "total": total,
         "page": page,
         "per_page": per_page,
@@ -78,7 +78,7 @@ def get_alert_detail(alert_id: int, db: Session = Depends(get_db)):
     
     threat_intel = get_threat_intel(alert.source_ip)
     return {
-        "alert": alert,
+        "alert": AlertResponse.model_validate(alert),
         "threat_intel": threat_intel
     }
 

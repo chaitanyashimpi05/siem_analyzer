@@ -21,7 +21,7 @@ export default function Monitor() {
   useEffect(() => {
     checkStatus();
 
-    // Listen to live alerts
+    // Listen to live alerts over WebSocket
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/alerts`;
     const ws = new WebSocket(wsUrl);
@@ -31,7 +31,7 @@ export default function Monitor() {
         const data = JSON.parse(event.data);
         if (data.type === 'NEW_ALERTS') {
           const timestamp = new Date().toLocaleTimeString();
-          const logEntry = `[${timestamp}] [WATCHDOG EVENT] Auto-parsed new log file. Generated ${data.count} alert(s).`;
+          const logEntry = `[${timestamp}] [LIVE INGESTION] File '${data.filename || 'log'}' modified ➔ ${data.events_count || 1} event(s) parsed ➔ ${data.count} threat alert(s) generated!`;
           setStreamLogs((prev) => [logEntry, ...prev]);
         }
       } catch (err) {
@@ -44,19 +44,27 @@ export default function Monitor() {
 
   const handleStart = async () => {
     try {
-      await API.post('/monitor/start');
-      setActive(true);
+      const res = await API.post('/monitor/start');
+      if (res.data && res.data.active !== undefined) {
+        setActive(res.data.active);
+      } else {
+        setActive(true);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Start monitor error:", err);
     }
   };
 
   const handleStop = async () => {
     try {
-      await API.post('/monitor/stop');
-      setActive(false);
+      const res = await API.post('/monitor/stop');
+      if (res.data && res.data.active !== undefined) {
+        setActive(res.data.active);
+      } else {
+        setActive(false);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Stop monitor error:", err);
     }
   };
 
@@ -86,14 +94,14 @@ export default function Monitor() {
             {!active ? (
               <button
                 onClick={handleStart}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold text-xs font-mono transition-all flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/20"
               >
                 <Play className="w-4 h-4" /> Start Watchdog
               </button>
             ) : (
               <button
                 onClick={handleStop}
-                className="w-full py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-xs font-mono transition-all flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-600/20"
               >
                 <Square className="w-4 h-4" /> Stop Watchdog
               </button>
